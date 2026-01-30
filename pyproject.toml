@@ -16,6 +16,7 @@ sqs = ["boto3>=1.26.0"]
 
 [project.scripts]
 sumo-redrive = "sumoredrive.charge_request:main"
+sumo-redrive-concurrent = "sumoredrive.run_concurrent:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

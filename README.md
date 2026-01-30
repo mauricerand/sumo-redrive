@@ -39,6 +39,14 @@ python -m sumoredrive <ORDER_ID> --day YYYY-MM-DD
 python -m sumoredrive orders.csv
 ```
 
+**Concurrent (CSV only)** – run multiple orders in parallel with a thread pool:
+
+```bash
+sumo-redrive-concurrent orders.csv
+sumo-redrive-concurrent orders.csv --workers 10 --sqs-queue-url https://sqs....
+python -m sumoredrive.run_concurrent orders.csv --workers 5
+```
+
 ### Examples
 
 ```bash
@@ -66,3 +74,5 @@ Create [Sumo Logic access keys](https://help.sumologic.com/docs/manage-security/
 - If no result for the given day, retries the next calendar day once.
 - With `--sqs-queue-url`, sends each charge request JSON to the queue (requires `pip install -e ".[sqs]"`).
 - At the end prints: order IDs not found (if any), messages published to SQS, and elapsed time.
+
+**Concurrent script** (`sumo-redrive-concurrent`): accepts only a CSV path; runs one Sumo query per row in a thread pool (default 10 workers). Results are printed in CSV order. Use for faster batch runs.

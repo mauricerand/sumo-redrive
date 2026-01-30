@@ -27,7 +27,7 @@ QUERY_TEMPLATE = (
     '| replace(json, "\\\\\\\\", "") as json'
 )
 
-POLL_INTERVAL_SEC = 5
+POLL_INTERVAL_SEC = 2
 MESSAGE_PAGE_SIZE = 1000
 
 
@@ -90,8 +90,10 @@ def _read_csv_order_dates(path):
     return rows
 
 
-def _run_one_order(order_id, from_time, to_time, timezone, opener, headers, api_url, sqs_queue_url, aws_region):
-    """Run Sumo query for one order_id and time range. Returns (printed_count, sent_to_sqs_count)."""
+def _run_one_order(order_id, from_time, to_time, timezone, opener, headers, api_url, sqs_queue_url, aws_region, return_results=False):
+    """Run Sumo query for one order_id and time range.
+    Returns (printed_count, sent_to_sqs_count) or, when return_results=True, (printed_count, sent_to_sqs_count, list_of_parsed_dicts).
+    """
     query = QUERY_TEMPLATE % {"order_id": order_id}
     search_job = {
         "query": query,
@@ -106,12 +108,13 @@ def _run_one_order(order_id, from_time, to_time, timezone, opener, headers, api_
         )
     except urllib.error.HTTPError as e:
         print(f"Error creating search job: {e.code}", e.read().decode(), file=sys.stderr)
-        return 0, 0
+        return (0, 0, []) if return_results else (0, 0)
     if status != 202:
         print(f"Error creating search job: {status}", text, file=sys.stderr)
-        return 0, 0
+        return (0, 0, []) if return_results else (0, 0)
     job_id = json.loads(text)["id"]
-    print(f"[{order_id}] Search job created: {job_id}", file=sys.stderr)
+    if not return_results:
+        print(f"[{order_id}] Search job created: {job_id}", file=sys.stderr)
 
     while True:
         time.sleep(POLL_INTERVAL_SEC)
@@ -121,10 +124,10 @@ def _run_one_order(order_id, from_time, to_time, timezone, opener, headers, api_
             )
         except urllib.error.HTTPError as e:
             print(f"Error getting job status: {e.code}", e.read().decode(), file=sys.stderr)
-            return 0, 0
+            return (0, 0, []) if return_results else (0, 0)
         if status != 200:
             print(f"Error getting job status: {status}", text, file=sys.stderr)
-            return 0, 0
+            return (0, 0, []) if return_results else (0, 0)
         resp = json.loads(text)
         state = resp.get("state", "")
         message_count = resp.get("messageCount", 0)
@@ -135,11 +138,13 @@ def _run_one_order(order_id, from_time, to_time, timezone, opener, headers, api_
             break
         if state == "CANCELLED":
             print("Search job was cancelled.", file=sys.stderr)
-            return 0, 0
-        print(f"  State: {state}, messages: {message_count}", file=sys.stderr)
+            return (0, 0, []) if return_results else (0, 0)
+        if not return_results:
+            print(f"  State: {state}, messages: {message_count}", file=sys.stderr)
 
     printed = 0
     sent_to_sqs = 0
+    results_list = [] if return_results else None
     offset = 0
     while offset < message_count:
         url = f"{api_url}/api/v1/search/jobs/{job_id}/messages?{urlencode({'offset': offset, 'limit': MESSAGE_PAGE_SIZE})}"
@@ -173,16 +178,20 @@ def _run_one_order(order_id, from_time, to_time, timezone, opener, headers, api_
                     print(raw_json, file=sys.stderr)
                     continue
             if obj is not None:
-                out = json.dumps(obj, indent=2)
-                if printed > 0:
-                    print()
-                print(out)
+                if return_results:
+                    results_list.append(obj)
+                else:
+                    out = json.dumps(obj, indent=2)
+                    if printed > 0:
+                        print()
+                    print(out)
                 printed += 1
                 if sqs_queue_url:
                     try:
                         _send_to_sqs(sqs_queue_url, json.dumps(obj), region=aws_region)
                         sent_to_sqs += 1
-                        print(f"  -> sent to SQS ({sent_to_sqs})", file=sys.stderr)
+                        if not return_results:
+                            print(f"  -> sent to SQS ({sent_to_sqs})", file=sys.stderr)
                     except Exception as e:
                         print(f"  -> SQS send failed: {e}", file=sys.stderr)
                 # Accept only the first result
@@ -195,6 +204,8 @@ def _run_one_order(order_id, from_time, to_time, timezone, opener, headers, api_
         _request(opener, f"{api_url}/api/v1/search/jobs/{job_id}", headers, method="DELETE")
     except (urllib.error.HTTPError, OSError):
         pass
+    if return_results:
+        return printed, sent_to_sqs, results_list
     return printed, sent_to_sqs
 
 
