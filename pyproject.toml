@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sumoredrive"
+version = "0.1.0"
+description = "Query Sumo Logic for charge requests by order ID, pretty-print JSON, optionally send to SQS."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+dependencies = []
+
+[project.optional-dependencies]
+sqs = ["boto3>=1.26.0"]
+
+[project.scripts]
+sumo-redrive = "sumoredrive.charge_request:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
