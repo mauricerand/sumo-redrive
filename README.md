@@ -1,11 +1,11 @@
-# sumoRedrive
+# sumo-redrive
 
 Query Sumo Logic for charge requests by order ID, pretty-print JSON, and optionally send to SQS. Input: single order ID (with `--day`) or a CSV with columns `orderID` and `date`.
 
 ## Install
 
 ```bash
-cd sumoRedrive
+cd sumo-redrive
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e .
