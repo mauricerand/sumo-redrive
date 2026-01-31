@@ -1,4 +1,4 @@
-# sumoRedrive
+# sumo-redrive
 
 Query Sumo Logic for charge requests by order ID, pretty-print JSON, and optionally send to SQS.
 
@@ -7,7 +7,7 @@ Query Sumo Logic for charge requests by order ID, pretty-print JSON, and optiona
 ## Install
 
 ```bash
-cd sumoRedrive
+cd sumo-redrive
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e .
@@ -55,7 +55,7 @@ Run multiple orders in parallel with a thread pool. Progress lines appear on std
 
 ```bash
 sumo-redrive-concurrent orders.csv
-sumo-redrive-concurrent orders.csv --workers 10 --sqs-queue-url https://sqs....
+sumo-redrive-concurrent orders.csv --workers 4 --sqs-queue-url https://sqs....
 python -m sumoredrive.run_concurrent orders.csv --workers 5
 ```
 
@@ -75,7 +75,7 @@ python -m sumoredrive orders.csv
 | `--timezone` | Time zone for from/to (default: UTC). |
 | `--sqs-queue-url URL` | Send each charge request JSON to this SQS queue. |
 | `--debug` | Print query and time range to stderr, then exit. |
-| `--workers N` | (Concurrent only) Max parallel workers (default: 10). |
+| `--workers N` | (Concurrent only) Max parallel workers (default: 4). |
 
 ## Environment
 

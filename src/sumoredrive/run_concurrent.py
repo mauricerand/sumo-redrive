@@ -61,8 +61,8 @@ def main():
         "input",
         help="Path to CSV with columns: orderID, date (YYYY-MM-DD)",
     )
-    parser.add_argument("--workers", type=int, default=10,
-                        help="Max concurrent workers (default: 10)")
+    parser.add_argument("--workers", type=int, default=4,
+                        help="Max concurrent workers (default: 4)")
     parser.add_argument("--timezone", default="UTC", help="Time zone (default: UTC)")
     parser.add_argument("--sqs-queue-url", dest="sqs_queue_url", default=os.environ.get("SQS_QUEUE_URL"),
                         help="Send each charge request JSON to this SQS queue URL")
