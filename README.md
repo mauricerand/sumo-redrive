@@ -13,7 +13,12 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e .
 ```
 
-After install, use the **script** `sumo-redrive` (with hyphen) or the **module** `python -m sumoredrive` (no hyphen—Python module names cannot contain hyphens).
+**Run locally:** From the project directory with the venv activated, use any of:
+
+- `sumo-redrive` or `sumo_redrive` (concurrent: `sumo-redrive-concurrent` / `sumo_redrive_concurrent`)
+- `python -m sumoredrive` (always works; no hyphen in the module name)
+
+If `sumo-redrive` is not found, reinstall and use the underscore form or the module: `pip install -e .` then `sumo_redrive` or `python -m sumoredrive`.
 
 For SQS support (when using `--sqs-queue-url`):
 
