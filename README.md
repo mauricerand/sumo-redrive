@@ -13,6 +13,8 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e .
 ```
 
+After install, use the **script** `sumo-redrive` (with hyphen) or the **module** `python -m sumoredrive` (no hyphen—Python module names cannot contain hyphens).
+
 For SQS support (when using `--sqs-queue-url`):
 
 ```bash
@@ -60,6 +62,8 @@ python -m sumoredrive.run_concurrent orders.csv --workers 5
 ```
 
 ### Run as module
+
+Use the module name **sumoredrive** (no hyphen):
 
 ```bash
 python -m sumoredrive <ORDER_ID> --day YYYY-MM-DD
