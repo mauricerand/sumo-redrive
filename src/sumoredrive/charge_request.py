@@ -14,7 +14,8 @@ import time
 import urllib.error
 import urllib.request
 from base64 import b64encode
-from datetime import datetime, timedelta
+import re
+from datetime import datetime, timedelta, timezone
 from http.cookiejar import CookieJar
 from urllib.parse import urlencode
 
@@ -209,6 +210,31 @@ def _run_one_order(order_id, from_time, to_time, timezone, opener, headers, api_
     return printed, sent_to_sqs
 
 
+def _resolve_relative_time(from_time, to_time):
+    """Convert relative time (-7d, -1d, -12h, now) to ISO 8601 UTC. Sumo API accepts only ISO 8601 or epoch."""
+    now_utc = datetime.now(timezone.utc)
+    to_str = (to_time or "now").strip().lower()
+    to_iso = now_utc.strftime("%Y-%m-%dT%H:%M:%S") if to_str == "now" else to_time
+    from_iso = from_time
+    resolved_tz = None
+    # Parse relative from: -7d, -1d, -12h, -30m, -60s
+    m = re.match(r"^-(\d+)([dhms])$", (from_time or "").strip().lower())
+    if m:
+        amount = int(m.group(1))
+        unit = m.group(2)
+        if unit == "d":
+            delta = timedelta(days=amount)
+        elif unit == "h":
+            delta = timedelta(hours=amount)
+        elif unit == "m":
+            delta = timedelta(minutes=amount)
+        else:
+            delta = timedelta(seconds=amount)
+        from_iso = (now_utc - delta).strftime("%Y-%m-%dT%H:%M:%S")
+        resolved_tz = "UTC"
+    return from_iso, to_iso, resolved_tz
+
+
 def _next_day_from_time(from_time, to_time):
     """If from_time/to_time are same-day (YYYY-MM-DDTHH:MM:SS), return (next_from, next_to). Else None."""
     if len(from_time) < 10 or from_time[:4].isdigit() is False:
@@ -331,6 +357,9 @@ def main():
     else:
         from_time = args.from_time
         to_time = args.to_time or "now"
+        from_time, to_time, resolved_tz = _resolve_relative_time(from_time, to_time)
+        if resolved_tz is not None:
+            timezone = resolved_tz
 
     query = QUERY_TEMPLATE % {"order_id": order_id}
     search_job = {
